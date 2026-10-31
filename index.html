@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f6b5c">
+<title>عداد الجرد</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one narrow column; office chips, then collapsible groups (canevas sections), big tap targets; fixed action bar */
+:root{
+  --bg:#f3f5f4; --surface:#ffffff; --fg:#17201d; --muted:#5d6b66; --line:#d9e0dd;
+  --accent:#0f6b5c; --accent-fg:#ffffff; --soft:#e7ecea; --danger:#b3261e; --warn:#9a5b00;
+  --f-body:"IBM Plex Sans Arabic",system-ui,"Segoe UI",Roboto,sans-serif; --f-num:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#101614; --surface:#18211e; --fg:#e6ecea; --muted:#94a39e; --line:#2a3632;
+  --accent:#3fb39c; --accent-fg:#06221c; --soft:#24302c; --danger:#f2847b; --warn:#e8b25c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101614; --surface:#18211e; --fg:#e6ecea; --muted:#94a39e; --line:#2a3632;
+  --accent:#3fb39c; --accent-fg:#06221c; --soft:#24302c; --danger:#f2847b; --warn:#e8b25c; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 130px;
+  -webkit-tap-highlight-color:transparent}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+h1{font-size:22px;margin:0}
+.lbl{font-size:13px;color:var(--muted)}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;touch-action:manipulation}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ghost{background:transparent;color:var(--accent);font-weight:600;padding:8px 10px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.chip{flex:none;background:var(--surface);color:var(--fg);border:1px solid var(--line);padding:9px 14px;border-radius:999px;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent);font-weight:600}
+.chip.add{border-style:dashed;color:var(--muted)}
+.chip.danger{color:var(--danger);border-color:var(--danger)}
+details.grp{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+details.grp>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px;cursor:pointer;font-weight:700}
+details.grp>summary::-webkit-details-marker{display:none}
+summary .gnum{font-family:var(--f-num);font-size:12px;color:var(--muted);margin-inline-end:6px}
+summary .badge{font-family:var(--f-num);font-size:14px;background:var(--soft);padding:2px 10px;border-radius:999px;font-weight:600}
+summary .chev{transition:transform .15s;color:var(--muted)}
+details[open] summary .chev{transform:rotate(-90deg)}
+.items{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row.check .name{color:var(--warn)}
+.name{font-weight:600;min-width:0;overflow-wrap:anywhere;direction:ltr;text-align:right;unicode-bidi:plaintext}
+.tot{font-size:12px;color:var(--muted)}
+.ctl{display:flex;align-items:center;gap:8px;direction:ltr}
+.ctl .n{font-family:var(--f-num);font-size:24px;font-weight:600;min-width:2.2ch;text-align:center;font-variant-numeric:tabular-nums}
+.ctl .n.zero{color:var(--muted);opacity:.6}
+.minus{width:44px;height:44px;background:var(--soft);color:var(--fg);font-size:22px}
+.plus{width:60px;height:52px;background:var(--accent);color:var(--accent-fg);font-size:26px;font-weight:700}
+.del{background:transparent;color:var(--danger);font-size:14px;padding:8px}
+.addbox{display:flex;gap:8px;padding:10px 14px;border-top:1px dashed var(--line)}
+.addbox.top{padding:0;border:0;margin-top:8px}
+.addbox input{flex:1;min-width:0;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+.addbox button{background:var(--accent);color:var(--accent-fg);padding:0 14px;font-weight:600}
+.bar{position:fixed;inset:auto 0 0 0;background:var(--surface);border-top:1px solid var(--line);z-index:5;
+  padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.bar .in{max-width:560px;margin:0 auto;display:flex;gap:8px}
+.bar button{flex:1;padding:12px 6px;font-weight:600;background:var(--soft);color:var(--fg);font-size:15px}
+.bar button.pri{background:var(--accent);color:var(--accent-fg)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+.panel pre{white-space:pre-wrap;font-family:var(--f-num);font-size:13px;margin:10px 0 0;direction:ltr;text-align:left;user-select:all;max-height:50vh;overflow:auto}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.confirm .yes{background:var(--danger);color:#fff;padding:8px 14px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--muted);line-height:1.6;margin:0}
+@media (prefers-reduced-motion:reduce){summary .chev{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap" dir="rtl">
+  <header>
+    <div><h1>عداد الجرد</h1><div class="lbl" id="sub"></div></div>
+    <button class="ghost" id="editBtn">تعديل</button>
+  </header>
+
+  <section>
+    <div class="lbl" style="margin-bottom:6px">المكتب اللي راك فيه</div>
+    <div class="chips" id="offices"></div>
+    <div class="addbox top" id="officeAdd" hidden>
+      <input id="officeInput" placeholder="اسم المكتب (مثلاً: المحاسبة)" autocomplete="off">
+      <button id="officeOk">إضافة</button>
+    </div>
+  </section>
+
+  <div class="panel" id="sumPanel" hidden>
+    <div class="confirm"><strong>الملخص</strong>
+      <div class="seg"><button class="chip" id="fmtText" aria-pressed="true">نص</button><button class="chip" id="fmtXls" aria-pressed="false">جدول Excel</button></div>
+    </div>
+    <p class="hint" id="fmtHint" style="margin-top:8px"></p>
+    <div class="confirm" style="margin-top:6px"><button class="ghost" id="copyBtn">نسخ</button><span class="hint" id="copyMsg"></span></div>
+    <pre id="sumText"></pre>
+  </div>
+
+  <div class="panel" id="resetPanel" hidden>
+    <div class="confirm"><span>تمسح كل الأعداد؟ (الخانات والمكاتب يبقاو)</span>
+      <button class="yes" id="resetYes">نعم، امسح</button><button class="ghost" id="resetNo">إلغاء</button></div>
+  </div>
+
+  <div id="groups" style="display:flex;flex-direction:column;gap:10px"></div>
+
+  <p class="hint">الخانات باللون البرتقالي هي نقاط مراقبة (مثلاً PC بلا أنتيفيروس): تحسبها زيادة على عدد الأجهزة، ماشي جهاز جديد.<br>
+  نسخة Windows: على كل PC اضغط Win + R واكتب <b dir="ltr">winver</b>.<br>
+  الأعداد تتحفظ أوتوماتيكياً في هذا المتصفح على هذا الهاتف.</p>
+</div>
+
+<div class="bar"><div class="in" dir="rtl">
+  <button class="pri" id="sumBtn">الملخص</button>
+  <button id="foldBtn">طوي الكل</button>
+  <button id="resetBtn">تصفير</button>
+</div></div>
+
+<script>
+const KEY='inv-counter-v2', OLD='inv-counter-v1';
+const GROUPS=[
+ {id:'pc',  n:'1', t:'حواسيب المكتب (PC fixe)', items:['PC fixe – Windows 11','PC fixe – Windows 10','PC fixe – Windows 7 / 8','PC fixe – Autre (XP, Linux…)']},
+ {id:'lap', n:'1', t:'الحواسيب المحمولة', items:['Portable – Windows 11','Portable – Windows 10','Portable – Windows 7 / 8','Portable – Autre']},
+ {id:'srv', n:'1', t:'حاسوب يخدم كسيرفر', items:['PC utilisé comme serveur / partage']},
+ {id:'chk', n:'6-7', t:'نقاط المراقبة (أمن)', check:true, items:['PC sans antivirus','PC sans mot de passe / session partagée','PC avec accès ERP','PC avec droits administrateur (utilisateur)']},
+ {id:'prt', n:'1', t:'الطابعات والملحقات', items:['Imprimante laser (USB)','Imprimante réseau','Multifonction / Photocopieur','Scanner','Traceur (plotter)']},
+ {id:'net', n:'2-4', t:'الشبكة والإنترنت', items:['Modem / Box Internet','Modem ou clé 4G','Routeur','Switch','Point d’accès Wi-Fi']},
+ {id:'pwr', n:'8', t:'الطاقة والتخزين', items:['Onduleur','NAS / Disque réseau','Disque dur externe']},
+ {id:'cam', n:'11', t:'كاميرات المراقبة (CCTV)', items:['Caméra IP','Caméra analogique','DVR / NVR','Écran de surveillance']},
+ {id:'oth', n:'', t:'أخرى', items:[]}
+];
+const $=id=>document.getElementById(id);
+function fresh(){return{groups:GROUPS.map(g=>({id:g.id,items:g.items.slice()})),offices:['مكتب 1'],cur:0,counts:{},open:{pc:true},fmt:'text'}}
+let S=null;
+try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!S||!S.groups){S=fresh();
+  try{const o=JSON.parse(localStorage.getItem(OLD));                // keep counts from the first version
+    if(o&&o.counts){S.offices=o.offices||S.offices;S.counts=o.counts;
+      const known=new Set(S.groups.flatMap(g=>g.items));
+      (o.items||[]).map(x=>x.replace(/^↳ /,'')).forEach(x=>{if(!known.has(x))S.groups.find(g=>g.id==='oth').items.push(x)});
+      for(const of in S.counts){for(const k in S.counts[of]){if(k.startsWith('↳ ')){S.counts[of][k.slice(2)]=S.counts[of][k];delete S.counts[of][k]}}}}
+  }catch(e){}}
+let editing=false;
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const meta=id=>GROUPS.find(g=>g.id===id);
+const get=(o,i)=>(S.counts[o]||{})[i]||0;
+const total=i=>S.offices.reduce((a,o)=>a+get(o,i),0);
+const allItems=()=>S.groups.flatMap(g=>g.items);
+const devices=()=>S.groups.filter(g=>!meta(g.id).check).flatMap(g=>g.items);
+
+function bump(o,i,d){S.counts[o]=S.counts[o]||{};S.counts[o][i]=Math.max(0,(S.counts[o][i]||0)+d);save();render();
+  if(d>0){try{navigator.vibrate&&navigator.vibrate(15)}catch(e){}}}
+
+function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+
+function render(){
+  const off=S.offices[S.cur];
+  const devHere=devices().reduce((a,i)=>a+get(off,i),0), devAll=devices().reduce((a,i)=>a+total(i),0);
+  $('sub').textContent='«'+off+'»: '+devHere+' جهاز · المجموع '+devAll+' في '+S.offices.length+' مكتب';
+  $('editBtn').textContent=editing?'تم':'تعديل';
+  // offices
+  const oc=$('offices');oc.innerHTML='';
+  S.offices.forEach((o,k)=>{const b=el('button','chip',o);b.setAttribute('aria-pressed',k===S.cur);b.onclick=()=>{S.cur=k;save();render()};oc.appendChild(b)});
+  const a=el('button','chip add','+ مكتب');a.onclick=()=>{$('officeAdd').hidden=false;$('officeInput').focus()};oc.appendChild(a);
+  if(editing&&S.offices.length>1){const d=el('button','chip danger','حذف «'+off+'»');
+    d.onclick=()=>{S.offices.splice(S.cur,1);delete S.counts[off];S.cur=0;save();render()};oc.appendChild(d)}
+  // groups
+  const G=$('groups');G.innerHTML='';
+  S.groups.forEach(g=>{
+    const m=meta(g.id); if(!g.items.length&&!editing&&g.id!=='oth')return;
+    const det=el('details','grp');det.open=!!S.open[g.id];
+    det.ontoggle=()=>{S.open[g.id]=det.open;save()};
+    const sm=el('summary');const left=el('span');
+    if(m.n)left.appendChild(el('span','gnum','§'+m.n));left.appendChild(document.createTextNode(m.t));
+    const here=g.items.reduce((s,i)=>s+get(off,i),0);
+    const right=el('span');right.style.cssText='display:flex;gap:8px;align-items:center';
+    right.append(el('span','badge',here),el('span','chev','‹'));
+    sm.append(left,right);det.appendChild(sm);
+    const box=el('div','items');
+    g.items.forEach((it,idx)=>{
+      const r=el('div','row'+(m.check?' check':''));const info=el('div');
+      info.append(el('div','name',it),el('div','tot','المجموع: '+total(it)));
+      const c=el('div','ctl');
+      if(editing){const d=el('button','del','حذف');d.onclick=()=>{g.items.splice(idx,1);save();render()};c.appendChild(d)}
+      else{const n=get(off,it);
+        const mi=el('button','minus','−');mi.setAttribute('aria-label','نقص '+it);mi.onclick=()=>bump(off,it,-1);
+        const v=el('span','n'+(n?'':' zero'),n);
+        const p=el('button','plus','+');p.setAttribute('aria-label','زيد '+it);p.onclick=()=>bump(off,it,1);
+        c.append(mi,v,p)}
+      r.append(info,c);box.appendChild(r)});
+    const ab=el('div','addbox');const inp=el('input');inp.placeholder='زيد خانة هنا…';inp.autocomplete='off';
+    const ok=el('button',null,'إضافة');
+    const add=()=>{const v=inp.value.trim();if(!v||allItems().includes(v))return;g.items.push(v);S.open[g.id]=true;save();render()};
+    ok.onclick=add;inp.onkeydown=e=>{if(e.key==='Enter')add()};ab.append(inp,ok);
+    if(editing||g.id==='oth')box.appendChild(ab);
+    det.appendChild(box);G.appendChild(det)});
+  // summary
+  ['text','xls'].forEach(f=>$(f==='text'?'fmtText':'fmtXls').setAttribute('aria-pressed',S.fmt===f));
+  $('fmtHint').textContent=S.fmt==='xls'?'انسخ والصق في خلية فارغة في Excel: يتوزع على أعمدة (الفئة، المكاتب، المجموع).':'ملخص مرتب حسب أقسام الكانفا، مع التفصيل لكل مكتب.';
+  if(!$('sumPanel').hidden)$('sumText').textContent=S.fmt==='xls'?table():summary();
+  $('foldBtn').textContent=S.groups.some(g=>S.open[g.id])?'طوي الكل':'افتح الكل';
+}
+
+function summary(){
+  let t='INVENTAIRE – '+S.offices.length+' bureau(x)\n';
+  S.groups.forEach(g=>{const m=meta(g.id);const lines=g.items.filter(i=>total(i)).map(i=>'  - '+i+' : '+total(i));
+    if(lines.length)t+='\n['+(m.n?'§'+m.n+' ':'')+m.t+']\n'+lines.join('\n')+'\n'});
+  t+='\n--- Détail par bureau ---\n';
+  S.offices.forEach(o=>{const l=allItems().filter(i=>get(o,i)).map(i=>'  - '+i+' : '+get(o,i));
+    if(l.length)t+='\n'+o+'\n'+l.join('\n')+'\n'});
+  return t.trim();
+}
+function table(){
+  const rows=[['Catégorie',...S.offices,'Total']];
+  allItems().filter(i=>total(i)).forEach(i=>rows.push([i,...S.offices.map(o=>get(o,i)),total(i)]));
+  return rows.map(r=>r.join('\t')).join('\n');
+}
+
+$('editBtn').onclick=()=>{editing=!editing;if(editing)S.groups.forEach(g=>S.open[g.id]=true);render()};
+function addOffice(){const v=$('officeInput').value.trim();if(!v||S.offices.includes(v))return;S.offices.push(v);S.cur=S.offices.length-1;
+  $('officeInput').value='';$('officeAdd').hidden=true;save();render();scrollTo({top:0})}
+$('officeOk').onclick=addOffice;$('officeInput').onkeydown=e=>{if(e.key==='Enter')addOffice()};
+$('sumBtn').onclick=()=>{const p=$('sumPanel');p.hidden=!p.hidden;$('copyMsg').textContent='';render();if(!p.hidden)p.scrollIntoView({behavior:'smooth'})};
+$('fmtText').onclick=()=>{S.fmt='text';save();render()};$('fmtXls').onclick=()=>{S.fmt='xls';save();render()};
+$('copyBtn').onclick=()=>{const t=S.fmt==='xls'?table():summary();
+  const sel=()=>{const r=document.createRange();r.selectNodeContents($('sumText'));const s=getSelection();s.removeAllRanges();s.addRange(r);$('copyMsg').textContent='النص محدد، انسخو يدوياً'};
+  if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>$('copyMsg').textContent='تنسخ ✓').catch(sel);else sel()};
+$('foldBtn').onclick=()=>{const any=S.groups.some(g=>S.open[g.id]);S.groups.forEach(g=>S.open[g.id]=!any);save();render()};
+$('resetBtn').onclick=()=>{$('resetPanel').hidden=false;$('resetPanel').scrollIntoView({behavior:'smooth'})};
+$('resetNo').onclick=()=>{$('resetPanel').hidden=true};
+$('resetYes').onclick=()=>{S.counts={};$('resetPanel').hidden=true;save();render()};
+render();
+</script>
+</body>
+</html>
